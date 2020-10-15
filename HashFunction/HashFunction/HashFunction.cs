@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.IO;
 
 namespace HashFunction
 {
@@ -7,6 +8,8 @@ namespace HashFunction
     {
         public static string inputString;
         public static char[] outputString;
+        public static string konstitucija = "D:\\Mokslai\\3 semestras\\blockchain\\HashFunction\\HashFunction\\textFiles\\konstitucija.txt";
+        public static long time = 0;
         public const int count = 64;
 
         static void Main(string[] args)
@@ -15,12 +18,19 @@ namespace HashFunction
             {
                 for (int i = 0; i < args.Length; i++)
                 {
-                    inputString = System.IO.File.ReadAllText(args[i]);
-                    Console.WriteLine("Your input string from file no. {0}:\n {1}", i, inputString);
+                    inputString = File.ReadAllText(args[i]);
+                    Console.WriteLine("\n\nYour input string from file no. {0}:\n{1}\n", i+1, inputString);
 
-                    outputString = hashFunc(inputString);
-                    Console.WriteLine("String after hash function:");
-                    foreach(char ch in outputString) { Console.Write(ch); }
+                    if (inputString != "")
+                    {
+                        outputString = hashFunc(inputString);
+                        Console.WriteLine("String after hash function:");
+                        foreach (char ch in outputString) { Console.Write(ch); }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Your provided string is empty!");
+                    }
                 }
             }
             else
@@ -28,20 +38,40 @@ namespace HashFunction
                 Console.WriteLine("Enter your string:");
                 inputString = Console.ReadLine();
 
-                outputString = hashFunc(inputString);
-                Console.WriteLine("String after hash function:");
-                foreach (char ch in outputString) { Console.Write(ch); }
+                if (inputString != "")
+                {
+                    if (inputString == "konstitucija")
+                    {
+                        var watch = System.Diagnostics.Stopwatch.StartNew();
+                        foreach (string line in File.ReadAllLines(konstitucija))
+                        {
+                            Console.WriteLine(hashFunc(line));
+                        }
+                        watch.Stop();
+                        var elapsedMs = watch.ElapsedMilliseconds;
+                        Console.WriteLine("\n\nTime taken for hashing: {0}ms", elapsedMs);
+                    }
+                    else
+                    {
+                        outputString = hashFunc(inputString);
+                        Console.WriteLine("String after hash function:");
+                        foreach (char ch in outputString) { Console.Write(ch); }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Your provided string is empty!");
+                }
             }
         }
         static char[] hashFunc(string inputString)
-        {
+        {   
             byte[] ba;
             byte[] newBa;
             char[] finalHashString = new char[count];
             string hexString;
             bool isLong = false;
 
-            Console.WriteLine(inputString);
             ba = Encoding.ASCII.GetBytes(inputString);
             byte ch2;
             int j = 0;
@@ -92,16 +122,21 @@ namespace HashFunction
 
             hexString = BitConverter.ToString(newBa);
             hexString = hexString.Replace("-", "");
+
             if (!isLong)
             {
                 for (int i = 0, k = 0; i < count; i++)
                 {
                     finalHashString[i] = hexString[k];
                     k++;
-                    if (k >= hexString.Length - 1)
+                    if (k >= hexString.Length - 1 && k != 0)
                     {
                         k = i / 2 - (i / 3);
-                        if (k >= hexString.Length) { k = hexString.Length - k; }
+                        if (k >= hexString.Length)
+                        {
+                            k = hexString.Length - k;
+                            if (k < 0) { k = 0; }
+                        }
                     }
                 }
             }
@@ -126,6 +161,7 @@ namespace HashFunction
 
                 }
             }
+
             return finalHashString;
         }
     }
