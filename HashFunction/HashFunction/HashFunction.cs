@@ -1,13 +1,13 @@
 ﻿using System;
+using System.Text;
 
 namespace HashFunction
 {
     class HashFunction
     {
         public static string inputString;
-        public static string outputString;
-        //public static char[] hashString = new char[128];
-        public const int count = 128;
+        public static char[] outputString;
+        public const int count = 64;
 
         static void Main(string[] args)
         {
@@ -16,108 +16,117 @@ namespace HashFunction
                 for (int i = 0; i < args.Length; i++)
                 {
                     inputString = System.IO.File.ReadAllText(args[i]);
-                    Console.WriteLine("Your input string from file no. {0}:\n{1}", i, inputString);
+                    Console.WriteLine("Your input string from file no. {0}:\n {1}", i, inputString);
 
                     outputString = hashFunc(inputString);
-                    Console.WriteLine("String after hash function:\n{0}", outputString);
+                    Console.WriteLine("String after hash function:");
+                    foreach(char ch in outputString) { Console.Write(ch); }
                 }
             }
             else
             {
-                //Console.WriteLine("Enter your string:");
-                //inputString = Console.ReadLine();
+                Console.WriteLine("Enter your string:");
+                inputString = Console.ReadLine();
 
                 outputString = hashFunc(inputString);
-                Console.WriteLine("String after hash function:\n{0}", outputString);
+                Console.WriteLine("String after hash function:");
+                foreach (char ch in outputString) { Console.Write(ch); }
             }
         }
-        static string hashFunc(string inputString)
+        static char[] hashFunc(string inputString)
         {
-            inputString = "testing";
+            byte[] ba;
+            byte[] newBa;
+            char[] finalHashString = new char[count];
+            string hexString;
+            bool isLong = false;
 
-            char[] hashString = new char[128];
-            byte symbol;
-            byte prevSymbol = count;
-            byte[] hashSymbol;
-            //int i = 0;
+            Console.WriteLine(inputString);
+            ba = Encoding.ASCII.GetBytes(inputString);
+            byte ch2;
+            int j = 0;
+            int loop = 0;
+            byte prevVal = Byte.MinValue;
 
-            //hashSymbol = GetBytes(inputString);
-            hashSymbol = Convert.FromBase64String(inputString);
+            newBa = new byte[ba.Length];
 
-            //if (inputString.Length <= count)
-            //{
-            /*for (int i = 0, j = 0; i < 7; i++)
+            if (ba.Length > count) { isLong = true; }
+
+            foreach (var ch in ba)
             {
-                try
+                ch2 = ch;
+
+                if (j % 3 == 0 || j % 5 == 0)
                 {
-                    symbol = hashSymbol[i];
-                    hashSymbol[i] += prevSymbol;
-                    prevSymbol = symbol;
-
-                    // sth
-                    *//*symbol = inputString[j];
-                    hashSymbol = Convert.ToByte(symbol);
-                    hashSymbol += prevSymbol;
-                    hashSymbol %= 16;
-
-                    prevSymbol = Convert.ToByte(symbol);
-                    // prideda prie galinio hashStringo
-                    hashString[i] = Convert.ToChar(hashSymbol);
-                    Console.WriteLine("{0} is converted to {1}. Final symbol: {2}", symbol, hashSymbol, hashString[i]);
-
-                    j++;
-
-                    //temp
-                    if (j == inputString.Length) break;*//*
-
-
+                    prevVal /= 2;
+                    ch2 -= prevVal;
                 }
-                catch (OverflowException)
+                else if (j % 7 == 0)
                 {
-                    // console.writeline("unable to convert u+{0} to a byte.",
-                    //                 Convert.ToInt16(symbol).ToString("X4"));
+                    prevVal /= 3;
+                    ch2 += prevVal;
                 }
-                //  }
-                }*/
-
-            /*foreach (char symbol in inputString)
-            {
-                try
+                else
                 {
-
-                    byte result = Convert.ToByte(symbol);
-                    Console.WriteLine("{0} is converted to {1}.", symbol, result);
-
-                    i++;
-                }
-                catch (OverflowException)
-                {
-                    Console.WriteLine("Unable to convert u+{0} to a byte.",
-                                      Convert.ToInt16(symbol).ToString("X4"));
-                }
-            }*/
-            //string str = GetString(hashSymbol);
-            string str = Convert.ToBase64String(hashSymbol);
-
-            foreach (char ch in str)
-                {
-                    Console.Write(ch);
+                    ch2 += prevVal;
                 }
 
-                return str;
-            }
-            static byte[] GetBytes(string str)
-            {
-                byte[] bytes = new byte[str.Length * sizeof(char)];
-                System.Buffer.BlockCopy(str.ToCharArray(), 0, bytes, 0, bytes.Length);
-                return bytes;
-            }
-            static string GetString(byte[] bytes)
-            {
-                char[] chars = new char[bytes.Length / sizeof(char)];
-                System.Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
-                return new string(chars);
+                if (isLong && j == (count/2 - 1)) 
+                { 
+                    loop++;
+                    j = 0;
+                }
+
+                if (loop == 0)
+                {
+                    newBa[j] = ch2;
+                }
+                else
+                {
+                    newBa[j] += ch2;
+                }
+
+                prevVal = newBa[j];
+                j++;
             }
 
+            hexString = BitConverter.ToString(newBa);
+            hexString = hexString.Replace("-", "");
+            if (!isLong)
+            {
+                for (int i = 0, k = 0; i < count; i++)
+                {
+                    finalHashString[i] = hexString[k];
+                    k++;
+                    if (k >= hexString.Length - 1)
+                    {
+                        k = i / 2 - (i / 3);
+                        if (k >= hexString.Length) { k = hexString.Length - k; }
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0, k = 0, t = 0; i < hexString.Length; i++)
+                {
+                    if (k == count)
+                    {
+                        k = 0;
+                        t++;
+                    }
+                    if (t == 0)
+                    {
+                        finalHashString[k] = hexString[i];
+                        k++;
+                    }
+                    else
+                    {
+                        finalHashString[k] += hexString[i];
+                    }
+
+                }
+            }
+            return finalHashString;
         }
     }
+}
