@@ -7,19 +7,69 @@ namespace HashFunction
     class HashFunction
     {
         public static string inputString;
+        public static string[] pairs;
         public static char[] outputString;
         public static string konstitucija = "D:\\Mokslai\\3 semestras\\blockchain\\HashFunction\\HashFunction\\textFiles\\konstitucija.txt";
         public static long time = 0;
         public const int count = 64;
+        public const int lineCount = 25000;
 
         static void Main(string[] args)
         {
+            string string1 = string.Empty;
+            string string2 = string.Empty;
+            int collisionCount = 0;
+
             if (args.Length > 0)
             {
                 for (int i = 0; i < args.Length; i++)
                 {
-                    inputString = File.ReadAllText(args[i]);
-                    Console.WriteLine("\n\nYour input string from file no. {0}:\n{1}\n", i+1, inputString);
+                    if (args[i].Substring(args[i].Length - 3) == "csv")
+                    {
+                        Console.WriteLine("\n\nYour input string from file no. {0}:\n{1}\n", i + 1, inputString);
+                        Console.WriteLine("Calculating collisions ... ");
+                        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+                        for (int j = 0; j < lineCount; j++)
+                        {
+                            inputString = File.ReadAllLines(args[i])[j];
+                            pairs = inputString.Split(',');
+                            int loopCount = 0;
+                            foreach (string s in pairs)
+                            {
+                                if (loopCount == 0)
+                                {
+                                    loopCount++;
+                                    string1 = hashFunc(s).ToString();
+                                }
+                                else if (loopCount == 1)
+                                {
+                                    loopCount++;
+                                    string2 = hashFunc(s).ToString();
+                                }
+                                else
+                                {
+                                    loopCount = 0;
+                                    if (string1 == string2)
+                                    {
+                                        collisionCount++;
+                                        Console.WriteLine("\nCOLLISION: {0} AND {1}, string: {2}", string1, string2, s);
+                                    }
+                                }
+                            }
+                        }
+                        watch.Stop();
+                        var elapsedMs = watch.ElapsedMilliseconds;
+                        Console.WriteLine("\n\nTime taken for calculating collisions between {0} pairs: {1}ms", lineCount, elapsedMs);
+
+                        Console.WriteLine("\nCollisions found between pairs: {0}", collisionCount);
+                        collisionCount = 0;
+                    }
+                    else
+                    {
+                        inputString = File.ReadAllText(args[i]);
+                        Console.WriteLine("\n\nYour input string from file no. {0}:\n{1}\n", i + 1, inputString);
+                    }
 
                     if (inputString != "")
                     {
@@ -161,6 +211,9 @@ namespace HashFunction
 
                 }
             }
+
+            finalHashString[count - 2] = finalHashString[count - 4];
+            finalHashString[count - 1] = finalHashString[count - 8];
 
             return finalHashString;
         }
