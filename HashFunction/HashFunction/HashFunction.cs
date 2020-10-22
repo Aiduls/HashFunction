@@ -7,29 +7,117 @@ namespace HashFunction
     class HashFunction
     {
         public static string inputString;
+        public static string[] pairs;
         public static char[] outputString;
         public static string konstitucija = "D:\\Mokslai\\3 semestras\\blockchain\\HashFunction\\HashFunction\\textFiles\\konstitucija.txt";
         public static long time = 0;
         public const int count = 64;
+        public const int lineCount = 25000; // changable line count
+        public static bool isComparisonOn = false; // has to be changed to true if comparing is needed
 
         static void Main(string[] args)
         {
+            string string1 = string.Empty;
+            string string2 = string.Empty;
+            string prevString = string.Empty;
+            int collisionCount = 0;
+            double minPercent = 100;
+            double maxPercent = 0;
+            double averagePercent = 0;
+            double currentPercent = 0;
+            int identicalCount = 0;
+
             if (args.Length > 0)
             {
                 for (int i = 0; i < args.Length; i++)
                 {
-                    inputString = File.ReadAllText(args[i]);
-                    Console.WriteLine("\n\nYour input string from file no. {0}:\n{1}\n", i+1, inputString);
-
-                    if (inputString != "")
+                    if (args[i].Substring(args[i].Length - 3) == "csv")
                     {
-                        outputString = hashFunc(inputString);
-                        Console.WriteLine("String after hash function:");
-                        foreach (char ch in outputString) { Console.Write(ch); }
+                        Console.WriteLine("\n\nYour input string from file no. {0}:\n", i + 1);
+                        Console.WriteLine("Calculating collisions ... ");
+                        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+                        for (int j = 0; j < lineCount; j++)
+                        {
+                            inputString = File.ReadAllLines(args[i])[j];
+                            pairs = inputString.Split(',');
+                            int loopCount = 0;
+                            foreach (string s in pairs)
+                            {
+                                if (loopCount == 0)
+                                {
+                                    loopCount++;
+                                    string1 = string.Join("", hashFunc(s));
+                                    prevString = s;
+                                }
+                                else if (loopCount == 1)
+                                {
+                                    loopCount = 0;
+
+                                    string2 = string.Join("", hashFunc(s));
+                                    
+                                    if (string1 == string2)
+                                    {
+                                        collisionCount++;
+                                        Console.WriteLine("\nCOLLISION: {0} AND {1}, strings: {2} AND {3}", string1, string2, prevString, s);
+                                    }
+                                    if (isComparisonOn)
+                                    {
+                                        identicalCount = 0;
+                                        for (int z = 0; z < count; z++)
+                                        {
+                                            // Comparison on hex level
+                                            if (string1[z] == string2[z])
+                                            {
+                                                identicalCount++;
+                                            }
+                                            // Comparison on bit level
+                                            if (Convert.ToByte(string1[z]) == Convert.ToByte(string2[z]))
+                                            {
+                                                identicalCount++;
+                                            }
+                                        }
+                                        currentPercent = Convert.ToDouble(identicalCount) / 2 / 64 * 100;
+
+                                        if (currentPercent < minPercent) { minPercent = currentPercent; }
+                                        if (currentPercent > maxPercent) { maxPercent = currentPercent; }
+
+                                        averagePercent += currentPercent;
+                                    }
+                                }
+                            }
+                            
+                        }
+                        watch.Stop();
+                        var elapsedMs = watch.ElapsedMilliseconds;
+                        Console.WriteLine("\n\nTime taken for calculating collisions between {0} pairs (length: {1}): {2}ms", lineCount, inputString.Length / 2, elapsedMs);
+
+                        Console.WriteLine("\nCollisions found between pairs: {0}", collisionCount);
+
+                        if (isComparisonOn) 
+                        { 
+                            averagePercent /= Convert.ToDouble(lineCount);
+                            Console.WriteLine("\nComparison data:\nmin similarities found: {0}%\nmax similarities found: {1}%\naverage similarities found: {2}%\n", minPercent, maxPercent, averagePercent);
+                        }
+                        collisionCount = 0;
                     }
                     else
                     {
-                        Console.WriteLine("Your provided string is empty!");
+                        
+
+                        inputString = File.ReadAllText(args[i]);
+                        Console.WriteLine("\n\nYour input string from file no. {0}:\n{1}\n", i + 1, inputString);
+
+                        if (inputString != "")
+                        {
+                            outputString = hashFunc(inputString);
+                            Console.WriteLine("String after hash function:");
+                            foreach (char ch in outputString) { Console.Write(ch); }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Your provided string is empty!");
+                        }
                     }
                 }
             }
@@ -161,6 +249,9 @@ namespace HashFunction
 
                 }
             }
+
+            finalHashString[count - 2] = finalHashString[count - 4];
+            finalHashString[count - 1] = finalHashString[count - 8];
 
             return finalHashString;
         }
